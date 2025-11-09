@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レコメンド機能導入 ROI計算ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        .section {
+            background: #f8f9ff;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .input-group input,
+        .input-group select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-with-unit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-with-unit input {
+            flex: 1;
+        }
+        
+        .unit {
+            color: #666;
+            font-weight: bold;
+            min-width: 60px;
+        }
+        
+        .calculate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .result-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .result-card.highlight {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .result-card h3 {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+        
+        .result-card .value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-card .subvalue {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .comparison-bars {
+            display: flex;
+            gap: 40px;
+            align-items: flex-end;
+            justify-content: center;
+            height: 300px;
+            margin: 30px 0;
+        }
+        
+        .bar-group {
+            text-align: center;
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .bar {
+            background: linear-gradient(to top, #667eea 0%, #764ba2 100%);
+            border-radius: 10px 10px 0 0;
+            margin: 0 auto 10px;
+            width: 100%;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        
+        .bar.after {
+            background: linear-gradient(to top, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .bar-label {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            font-weight: bold;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .bar-title {
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+        }
+        
+        .scenario-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .scenario-table th,
+        .scenario-table td {
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        .scenario-table th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .scenario-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .scenario-table .best {
+            background: #e8f5e9;
+            font-weight: bold;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .info-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .export-btn {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .recommendation h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .recommendation p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .calculate-btn, .export-buttons {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 レコメンド機能導入 ROI計算ツール</h1>
+        <p class="subtitle">御社の数値を入力すると、導入効果と投資回収期間を自動計算します</p>
+        
+        <div class="section">
+            <h2>1. 現在の事業数値を入力</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>月商（万円）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="monthlySales" value="1000" min="0">
+                        <span class="unit">万円</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>粗利率（%）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="grossMargin" value="40" min="0" max="100">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>月間訪問者数（人）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="monthlyVisitors" value="10000" min="0">
+                        <span class="unit">人</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>現在の購入率（%）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="conversionRate" value="2" min="0" max="100" step="0.1">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>平均客単価（円）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="avgOrderValue" value="5000" min="0">
+                        <span class="unit">円</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>商品点数</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="productCount" value="500" min="0">
+                        <span class="unit">点</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>2. 導入プランを選択</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>プラン</label>
+                    <select id="plan">
+                        <option value="300">ライトプラン（300万円）</option>
+                        <option value="500" selected>スタンダードプラン（500万円）- 推奨</option>
+                        <option value="800">プレミアムプラン（800万円）</option>
+                        <option value="custom">カスタム</option>
+                    </select>
+                </div>
+                
+                <div class="input-group" id="customPriceGroup" style="display: none;">
+                    <label>カスタム初期費用（万円）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="customPrice" value="500" min="0">
+                        <span class="unit">万円</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>月額保守費用（万円）</label>
+                    <div class="input-with-unit">
+                        <input type="number" id="monthlyCost" value="10" min="0">
+                        <span class="unit">万円</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>期待効果（売上向上率）</label>
+                    <select id="effectRate">
+                        <option value="15">保守的（+15%）</option>
+                        <option value="20">やや保守的（+20%）</option>
+                        <option value="25" selected>標準（+25%）</option>
+                        <option value="30">楽観的（+30%）</option>
+                        <option value="35">かなり楽観的（+35%）</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <button class="calculate-btn" onclick="calculate()">💡 ROIを計算する</button>
+        
+        <div class="results" id="results">
+            <div class="section">
+                <h2>📈 導入効果シミュレーション</h2>
+                
+                <div class="result-cards">
+                    <div class="result-card">
+                        <h3>現在の月間粗利</h3>
+                        <div class="value" id="currentProfit">-</div>
+                        <div class="subvalue">万円/月</div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h3>導入後の月間粗利</h3>
+                        <div class="value" id="afterProfit">-</div>
+                        <div class="subvalue">万円/月</div>
+                    </div>
+                    
+                    <div class="result-card highlight">
+                        <h3>粗利増加額</h3>
+                        <div class="value" id="profitIncrease">-</div>
+                        <div class="subvalue">万円/月</div>
+                    </div>
+                    
+                    <div class="result-card highlight">
+                        <h3>投資回収期間</h3>
+                        <div class="value" id="paybackPeriod">-</div>
+                        <div class="subvalue">ヶ月</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>売上・粗利の変化</h3>
+                    <div class="comparison-bars">
+                        <div class="bar-group">
+                            <div class="bar" id="salesBefore" style="height: 0;">
+                                <div class="bar-label" id="salesBeforeLabel">-</div>
+                            </div>
+                            <div class="bar-title">現在の月商</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar after" id="salesAfter" style="height: 0;">
+                                <div class="bar-label" id="salesAfterLabel">-</div>
+                            </div>
+                            <div class="bar-title">導入後の月商</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar" id="profitBefore" style="height: 0;">
+                                <div class="bar-label" id="profitBeforeLabel">-</div>
+                            </div>
+                            <div class="bar-title">現在の粗利</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar after" id="profitAfter" style="height: 0;">
+                                <div class="bar-label" id="profitAfterLabel">-</div>
+                            </div>
+                            <div class="bar-title">導入後の粗利</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>年間での投資対効果</h3>
+                    <table class="scenario-table">
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>初期投資</td>
+                                <td id="initialInvestment">-</td>
+                            </tr>
+                            <tr>
+                                <td>年間保守費用</td>
+                                <td id="annualMaintenance">-</td>
+                            </tr>
+                            <tr>
+                                <td>初年度総コスト</td>
+                                <td id="firstYearCost">-</td>
+                            </tr>
+                            <tr class="best">
+                                <td><strong>年間粗利増加</strong></td>
+                                <td id="annualProfitIncrease"><strong>-</strong></td>
+                            </tr>
+                            <tr class="best">
+                                <td><strong>初年度純利益</strong></td>
+                                <td id="firstYearNetProfit"><strong>-</strong></td>
+                            </tr>
+                            <tr class="best">
+                                <td><strong>2年目以降の年間利益</strong></td>
+                                <td id="secondYearProfit"><strong>-</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>シナリオ別シミュレーション</h3>
+                    <table class="scenario-table">
+                        <thead>
+                            <tr>
+                                <th>シナリオ</th>
+                                <th>売上向上率</th>
+                                <th>月間粗利増加</th>
+                                <th>投資回収期間</th>
+                                <th>年間純利益</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scenarioTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="recommendation" id="recommendation">
+                </div>
+                
+                <div class="info-box">
+                    <h4>💡 計算の前提条件</h4>
+                    <p>
+                        • 売上向上率は購入率と客単価の両方の改善を含みます<br>
+                        • 効果は導入後3ヶ月で段階的に表れると想定<br>
+                        • 粗利率は変動しないものとして計算<br>
+                        • 実際の効果は業種・商材・実装内容により変動します<br>
+                        • より正確なシミュレーションは個別相談でご提示します
+                    </p>
+                </div>
+                
+                <div class="export-buttons">
+                    <button class="export-btn" onclick="printReport()">🖨️ PDFで保存</button>
+                    <button class="export-btn" onclick="copyToClipboard()">📋 結果をコピー</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // プラン選択時の処理
+        document.getElementById('plan').addEventListener('change', function() {
+            const customGroup = document.getElementById('customPriceGroup');
+            if (this.value === 'custom') {
+                customGroup.style.display = 'block';
+            } else {
+                customGroup.style.display = 'none';
+            }
+        });
+        
+        function calculate() {
+            // 入力値の取得
+            const monthlySales = parseFloat(document.getElementById('monthlySales').value);
+            const grossMargin = parseFloat(document.getElementById('grossMargin').value) / 100;
+            const monthlyVisitors = parseFloat(document.getElementById('monthlyVisitors').value);
+            const conversionRate = parseFloat(document.getElementById('conversionRate').value) / 100;
+            const avgOrderValue = parseFloat(document.getElementById('avgOrderValue').value);
+            const productCount = parseFloat(document.getElementById('productCount').value);
+            
+            const planValue = document.getElementById('plan').value;
+            const initialCost = planValue === 'custom' 
+                ? parseFloat(document.getElementById('customPrice').value)
+                : parseFloat(planValue);
+            const monthlyCost = parseFloat(document.getElementById('monthlyCost').value);
+            const effectRate = parseFloat(document.getElementById('effectRate').value) / 100;
+            
+            // 現在の粗利計算
+            const currentMonthlyProfit = monthlySales * grossMargin;
+            
+            // 導入後の売上・粗利計算
+            const afterMonthlySales = monthlySales * (1 + effectRate);
+            const afterMonthlyProfit = afterMonthlySales * grossMargin;
+            
+            // 粗利増加額
+            const profitIncrease = afterMonthlyProfit - currentMonthlyProfit;
+            
+            // 投資回収期間
+            const totalFirstYearCost = initialCost + (monthlyCost * 12);
+            const annualProfitIncrease = profitIncrease * 12;
+            const paybackMonths = (initialCost + monthlyCost) / profitIncrease;
+            
+            // 年間純利益
+            const firstYearNetProfit = annualProfitIncrease - totalFirstYearCost;
+            const secondYearProfit = annualProfitIncrease - (monthlyCost * 12);
+            
+            // 結果表示
+            document.getElementById('currentProfit').textContent = currentMonthlyProfit.toFixed(0);
+            document.getElementById('afterProfit').textContent = afterMonthlyProfit.toFixed(0);
+            document.getElementById('profitIncrease').textContent = profitIncrease.toFixed(0);
+            document.getElementById('paybackPeriod').textContent = paybackMonths.toFixed(1);
+            
+            document.getElementById('initialInvestment').textContent = initialCost.toFixed(0) + '万円';
+            document.getElementById('annualMaintenance').textContent = (monthlyCost * 12).toFixed(0) + '万円';
+            document.getElementById('firstYearCost').textContent = totalFirstYearCost.toFixed(0) + '万円';
+            document.getElementById('annualProfitIncrease').textContent = annualProfitIncrease.toFixed(0) + '万円';
+            document.getElementById('firstYearNetProfit').textContent = firstYearNetProfit.toFixed(0) + '万円';
+            document.getElementById('secondYearProfit').textContent = secondYearProfit.toFixed(0) + '万円';
+            
+            // グラフ描画
+            const maxValue = Math.max(monthlySales, afterMonthlySales, currentMonthlyProfit, afterMonthlyProfit);
+            
+            setTimeout(() => {
+                document.getElementById('salesBefore').style.height = (monthlySales / maxValue * 250) + 'px';
+                document.getElementById('salesAfter').style.height = (afterMonthlySales / maxValue * 250) + 'px';
+                document.getElementById('profitBefore').style.height = (currentMonthlyProfit / maxValue * 250) + 'px';
+                document.getElementById('profitAfter').style.height = (afterMonthlyProfit / maxValue * 250) + 'px';
+                
+                document.getElementById('salesBeforeLabel').textContent = monthlySales.toFixed(0) + '万';
+                document.getElementById('salesAfterLabel').textContent = afterMonthlySales.toFixed(0) + '万';
+                document.getElementById('profitBeforeLabel').textContent = currentMonthlyProfit.toFixed(0) + '万';
+                document.getElementById('profitAfterLabel').textContent = afterMonthlyProfit.toFixed(0) + '万';
+            }, 100);
+            
+            // シナリオテーブル作成
+            const scenarios = [
+                { name: '保守的', rate: 0.15 },
+                { name: 'やや保守的', rate: 0.20 },
+                { name: '標準', rate: 0.25 },
+                { name: '楽観的', rate: 0.30 },
+                { name: 'かなり楽観的', rate: 0.35 }
+            ];
+            
+            let scenarioHTML = '';
+            scenarios.forEach(scenario => {
+                const scenarioSales = monthlySales * (1 + scenario.rate);
+                const scenarioProfit = scenarioSales * grossMargin;
+                const scenarioProfitIncrease = scenarioProfit - currentMonthlyProfit;
+                const scenarioPayback = (initialCost + monthlyCost) / scenarioProfitIncrease;
+                const scenarioAnnualProfit = (scenarioProfitIncrease * 12) - totalFirstYearCost;
+                
+                scenarioHTML += `
+                    <tr>
+                        <td>${scenario.name}</td>
+                        <td>+${(scenario.rate * 100).toFixed(0)}%</td>
+                        <td>${scenarioProfitIncrease.toFixed(0)}万円</td>
+                        <td>${scenarioPayback.toFixed(1)}ヶ月</td>
+                        <td>${scenarioAnnualProfit.toFixed(0)}万円</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('scenarioTableBody').innerHTML = scenarioHTML;
+            
+            // 推奨文言作成
+            let recommendation = '';
+            if (monthlySales < 300) {
+                recommendation = `
+                    <h3>⚠️ 検討の推奨</h3>
+                    <p>現在の月商では投資回収に${paybackMonths.toFixed(1)}ヶ月かかります。まずは月商300万円以上を目指すか、より低コストなノーコードツールの活用をお勧めします。月商が成長した段階で本格的なレコメンド機能の導入をご検討ください。</p>
+                `;
+            } else if (monthlySales >= 300 && monthlySales < 500) {
+                recommendation = `
+                    <h3>💡 導入を検討する価値あり</h3>
+                    <p>投資回収期間は${paybackMonths.toFixed(1)}ヶ月です。ライトプランから始めて、効果を確認しながら機能を拡張していくアプローチをお勧めします。まずは無料相談で詳細なシミュレーションを作成させていただきます。</p>
+                `;
+            } else if (monthlySales >= 500 && monthlySales < 1000) {
+                recommendation = `
+                    <h3>✅ 導入を強く推奨</h3>
+                    <p>投資回収期間は${paybackMonths.toFixed(1)}ヶ月で、年間${firstYearNetProfit.toFixed(0)}万円の純利益が見込めます。スタンダードプランで主要機能を実装し、継続的な改善で効果を最大化することをお勧めします。</p>
+                `;
+            } else {
+                recommendation = `
+                    <h3>🎯 今すぐ導入すべき</h3>
+                    <p>投資回収期間はわずか${paybackMonths.toFixed(1)}ヶ月で、年間${firstYearNetProfit.toFixed(0)}万円の純利益が期待できます。この規模であれば、プレミアムプランで全機能を実装し、画像検索などの高度な機能も含めた最大限の効果を狙うことをお勧めします。2年目以降は年間${secondYearProfit.toFixed(0)}万円の継続的な利益が見込めます。</p>
+                `;
+            }
+            document.getElementById('recommendation').innerHTML = recommendation;
+            
+            // 結果セクションを表示
+            document.getElementById('results').classList.add('show');
+            
+            // 結果セクションまでスクロール
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function printReport() {
+            window.print();
+        }
+        
+        function copyToClipboard() {
+            const monthlySales = document.getElementById('monthlySales').value;
+            const currentProfit = document.getElementById('currentProfit').textContent;
+            const afterProfit = document.getElementById('afterProfit').textContent;
+            const profitIncrease = document.getElementById('profitIncrease').textContent;
+            const paybackPeriod = document.getElementById('paybackPeriod').textContent;
+            const annualProfitIncrease = document.getElementById('annualProfitIncrease').textContent;
+            const firstYearNetProfit = document.getElementById('firstYearNetProfit').textContent;
+            
+            const text = `
+【レコメンド機能導入 ROIシミュレーション結果】
+
+現在の月商: ${monthlySales}万円
+現在の月間粗利: ${currentProfit}万円
+導入後の月間粗利: ${afterProfit}万円
+粗利増加額: ${profitIncrease}万円/月
+投資回収期間: ${paybackPeriod}ヶ月
+年間粗利増加: ${annualProfitIncrease}
+初年度純利益: ${firstYearNetProfit}
+
+※詳細な提案は個別相談にて作成いたします
+            `.trim();
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('結果をクリップボードにコピーしました！');
+            }).catch(() => {
+                alert('コピーに失敗しました。手動でコピーしてください。');
+            });
+        }
+    </script>
+</body>
+</html>
